@@ -1,0 +1,54 @@
+pipeline {
+    agent { label 'maven'}
+
+    stages {
+        stage('Clone Codebase') {
+            steps {
+                echo 'Clone Codebase from gitHub'
+                git 'https://github.com/pDeProost/maven-project.git'
+            }
+        }
+        stage('Compile') {
+            steps {
+                echo 'Compiling project'
+                withMaven(maven:'localMaven')
+                {
+                    sh 'mvn compile'
+                }
+            }
+        }
+        stage('Unit Tests') {
+            steps {
+                echo 'Testing'
+                withMaven(maven:'localMaven')
+                {
+                    sh 'mvn test'
+                }
+            }
+        }        
+        stage('Build Project') {
+            steps {
+                echo 'Packaging'
+                withMaven(maven:'localMaven')
+                {
+                    sh 'mvn -B -DskipTests clean package'
+                }
+            }
+        }        
+        stage('Analysis with SonarQube') {
+            steps {
+                echo 'Qualimetry Analysis'
+                withSonarQubeEnv(installationName:'localSonar',
+                credentialsId: 'cred4sonar')
+                {
+                    sh 'mvn -B -DskipTests clean package sonar:sonar'
+                }
+            }
+        }        
+        stage('Deploy Artefact') {
+            steps {
+                echo 'Deploying project'
+            }
+        }        
+    }
+}
